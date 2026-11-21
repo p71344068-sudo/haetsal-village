@@ -1,5 +1,5 @@
 /* 햇살 마을 — offline cache. Bump VERSION whenever any file changes. */
-const VERSION = 'haetsal-v1';
+const VERSION = 'haetsal-v2';
 const FONT_CACHE = 'haetsal-fonts';
 const CORE = [
   './', 'index.html', 'manifest.webmanifest', 'vendor/three.min.js',
