@@ -248,6 +248,13 @@ button:focus-visible{outline:3px solid #fff;outline-offset:2px}
 .steps{display:grid;gap:9px;margin:14px 0 4px;padding:0;list-style:none}
 .steps li{display:flex;gap:12px;align-items:center;font-size:13.5px;font-weight:700;line-height:1.4}
 .steps li .emo{width:42px;height:42px;flex:none;border-radius:12px;background:#f2e8d6;display:grid;place-items:center;font-size:23px}
+.sndrow{display:flex;align-items:center;gap:10px;margin-top:14px}
+.tog{flex:none;padding:10px 12px;border-radius:14px;background:#eadcc4;font-family:var(--display);font-size:16px;box-shadow:0 4px 0 #d3c09e;white-space:nowrap}
+.tog.on{background:var(--go);color:#fff;box-shadow:0 4px 0 var(--go-deep)}
+.sndrow input{flex:1;min-width:0;accent-color:var(--go)}
+.set .big-btn{padding:10px 0;font-size:16px;margin-top:10px}
+.set .sndrow{margin-top:10px}
+.mute{margin-top:8px;font-size:12px;font-weight:700;color:var(--ink-soft);text-align:center}
 .title-big{margin:0;text-align:center;font-family:var(--display);font-weight:400;font-size:25px}
 .sub{margin:6px 0 0;text-align:center;font-size:13px;color:var(--ink-soft);font-weight:700}
 .dex{display:grid;gap:6px;margin-top:12px}
@@ -261,7 +268,7 @@ button:focus-visible{outline:3px solid #fff;outline-offset:2px}
 .toast{position:absolute;left:50%;top:74px;z-index:60;transform:translate(-50%,-20px);padding:10px 16px;border-radius:14px;background:rgba(40,28,18,.9);color:#fff;font-size:14px;font-weight:700;opacity:0;transition:.25s;pointer-events:none;max-width:88%;text-align:center}
 .toast.on{opacity:1;transform:translate(-50%,0)}
 .fly{position:absolute;z-index:70;pointer-events:none;font-family:var(--emoji);transition:transform .7s cubic-bezier(.5,-0.3,.6,1),opacity .7s}
-.ghost{position:absolute;z-index:80;pointer-events:none;display:grid;place-items:center;font-family:var(--emoji);filter:drop-shadow(0 8px 6px rgba(0,0,0,.3))}
+.dragghost{position:absolute;z-index:80;pointer-events:none;display:grid;place-items:center;font-family:var(--emoji);filter:drop-shadow(0 8px 6px rgba(0,0,0,.3))}
 .burst{position:absolute;z-index:65;pointer-events:none;font-family:var(--emoji);font-size:22px;animation:burst 1s ease-out forwards}
 @keyframes burst{to{transform:translate(var(--dx),var(--dy)) rotate(var(--r));opacity:0}}
 .fxc{position:absolute;inset:0;z-index:66;pointer-events:none}
@@ -524,7 +531,7 @@ function renderHud(){
 function gainXp(n){
   S.xp+=n;
   while(S.xp>=xpNeed(S.level)){
-    S.xp-=xpNeed(S.level);S.level++;S.coins+=30;
+    S.xp-=xpNeed(S.level);S.level++;sfx('level');S.coins+=30;
     S.board.forEach(c=>{if(c&&c.k==='g'){c.ch=GEN_MAX[c.lv-1];c.t=Date.now()}});
     S.pending.push(chest(S.level>=6?2:1));
     const unlocks=Object.values(LOTS).filter(t=>t.need===S.level).map(t=>t.name);
@@ -1007,12 +1014,12 @@ function openLandmark(b){
 }
 function buildLandmark(b){
   const st=S.builds[b.id]||0,cost=b.stages[st];if(!canPay(cost))return;
-  pay(cost);S.builds[b.id]=st+1;gainXp((cost.e||0)+5);closeSheet();
+  sfx('build');pay(cost);S.builds[b.id]=st+1;gainXp((cost.e||0)+5);closeSheet();
   const id='lm:'+b.id;animating[id]=Date.now();
   if(V){const [x,z]=slotXZ(b.z,b.slot[0],b.slot[1]);flyCam(x,z,Math.max(V.zoom,1.1))}
   syncWorld();renderHud();save();
   setTimeout(()=>{
-    delete animating[id];syncWorld();const done=lmDone(b);popSlot(id);
+    delete animating[id];syncWorld();const done=lmDone(b);popSlot(id);sfx('done');
     if(done){fireworks();toast(`랜드마크 ${b.name} 완공!`);
       if(b.unlock){S.pending.push(gen(b.unlock));S.found[b.unlock]=Math.max(S.found[b.unlock]||0,1);save();setTimeout(()=>toast(`새 생산기 ${GENS[b.unlock].name} 획득! 합성 보드에 놓였어요`,3000),2400)}
       if(S.zonesOpen<ZONES.length&&zoneLmDone(S.zonesOpen-1))setTimeout(()=>{const st2=stats();toast(st2.charm>=ZONES[S.zonesOpen].charm?'다음 지역의 안개를 걷을 수 있어요!':`다음 지역까지 매력도 ${ZONES[S.zonesOpen].charm-st2.charm} 더 필요해요 · 빈 땅을 꾸며 보세요`,3200)},4800);
@@ -1048,10 +1055,10 @@ function openLot(id){
   });
 }
 function finishLot(id,msg){
-  closeSheet();animating[id]=Date.now();
+  sfx('build');closeSheet();animating[id]=Date.now();
   if(V){const s=SLOTS.find(x=>x.id===id);if(s)flyCam(s.x,s.z,Math.max(V.zoom,1.2))}
   syncWorld();renderHud();save();
-  setTimeout(()=>{delete animating[id];syncWorld();popSlot(id);toast(msg);burst(app.clientWidth/2,app.clientHeight*.45,['✨','⭐','🎉'],12);save()},2200);
+  setTimeout(()=>{delete animating[id];syncWorld();popSlot(id);sfx('done');toast(msg);burst(app.clientWidth/2,app.clientHeight*.45,['✨','⭐','🎉'],12);save()},2200);
 }
 function collect(id){
   const L=S.lots[id],T=LOTS[L.type],v=T.val[L.lv-1];
@@ -1059,7 +1066,7 @@ function collect(id){
   if(T.kind==='coin'){S.coins+=v;flyTo('🪙',r,$('pCoin'),5)}
   else if(T.kind==='energy'){S.energy+=v;flyTo('⚡',r,$('pEnergy'),Math.min(6,v+1))}
   else{const got=[];for(let i=0;i<v;i++){const m=pick(T.pool[L.lv-1]);S.inv[m]++;got.push(MATS[m].e)}flyTo(got[0],r,$('invBtn'),v,28);toast(`자재 획득: ${got.join(' ')}`)}
-  L.next=Date.now()+T.sec*1000;save();
+  sfx('coin');L.next=Date.now()+T.sec*1000;save();
   setTimeout(()=>{renderHud();buildLabels();renderGoal()},700);
 }
 
@@ -1126,7 +1133,7 @@ function nearestEmpty(from){
 function spawnFrom(i,obj,flashCls='spawn'){
   const t=nearestEmpty(i);if(t<0)return -1;
   const a=relRect(boardEl.children[i]),b=relRect(boardEl.children[t]);
-  const gh=document.createElement('div');gh.className='ghost';
+  const gh=document.createElement('div');gh.className='dragghost';
   gh.style.cssText=`left:${a.x}px;top:${a.y}px;width:${a.w}px;height:${a.h}px;font-size:${a.w*.55}px;transition:transform .22s ease-out`;
   gh.textContent=emojiOf(obj);app.appendChild(gh);
   requestAnimationFrame(()=>gh.style.transform=`translate(${b.x-a.x}px,${b.y-a.y}px)`);
@@ -1142,21 +1149,21 @@ function produce(i){
   if(v.ch>=GEN_MAX[v.lv-1])v.t=Date.now();
   v.ch--;S.produced=(S.produced||0)+1;
   const d=GEN_DIST[v.lv-1];let r=Math.random(),l=1;for(let k=0;k<d.length;k++){if(r<d[k]){l=k+1;break}r-=d[k]}
-  discover(v.g,l);spawnFrom(i,it(v.g,l));
+  sfx('pop');discover(v.g,l);spawnFrom(i,it(v.g,l));
   const c=boardEl.children[i];if(c){const ch=c.querySelector('.ch');if(ch)ch.textContent=v.ch}
 }
 function openChest(i){
   const v=S.board[i];
   if(nearestEmpty(i)<0){toast('상자를 열 공간이 없어요');shakeCell(i);return}
   const chains=unlockedChains();const roll=Math.random();const jk=[.06,.12,.2][v.l-1],cn=.18;
-  v.n--;
+  v.n--;sfx('chest');
   if(roll<jk)spawnFrom(i,{k:'j',lock:0},'pop');
   else if(roll<jk+cn){const amt=[8,15,30][v.l-1];S.coins+=amt;flyTo('🪙',relRect(boardEl.children[i]),$('pCoin'),4);setTimeout(renderHud,700)}
   else{const c=pick(chains);const l=1+rand(Math.min(chainLen(c)-1,v.l+1));discover(c,l);spawnFrom(i,it(c,l))}
   if(v.n<=0){S.board[i]=null;if(sel===i)sel=-1;setTimeout(()=>{renderBoard();save()},260)}
   else{const c=boardEl.children[i];if(c){const ch=c.querySelector('.ch');if(ch)ch.textContent=v.n}save()}
 }
-function shakeCell(i){const c=boardEl.children[i];if(!c)return;c.classList.remove('shake');void c.offsetWidth;c.classList.add('shake')}
+function shakeCell(i){sfx('bad');const c=boardEl.children[i];if(!c)return;c.classList.remove('shake');void c.offsetWidth;c.classList.add('shake')}
 function discover(c,l){if((S.found[c]||0)<l){const first=S.found[c]!==undefined;S.found[c]=l;if(first&&l>1)setTimeout(()=>toast(`새 아이템 발견: ${item(c,l)[0]} ${item(c,l)[1]}!`),300)}}
 function canMerge(A,B){
   if(!A||!B||A.k!==B.k||A.lock||B.__reserved)return false;
@@ -1169,9 +1176,9 @@ function mergeResult(A){if(A.k==='i')return it(A.c,A.l+1);if(A.k==='g')return ge
 function afterMerge(to,flash){
   const r=to/W|0,c=to%W;let revealed=0;
   [[r-1,c],[r+1,c],[r,c-1],[r,c+1]].forEach(([y,x])=>{if(y<0||y>=H||x<0||x>=W)return;const k=y*W+x,v=S.board[k];if(v&&v.lock===2){v.lock=1;flash[k]='reveal';revealed++}});
-  if(revealed){gainXp(revealed);tip('web','안개가 걷히고 덩굴 칸이 드러났어요! 같은 아이템을 끌어 합치면 풀려요')}
+  if(revealed){gainXp(revealed);setTimeout(()=>sfx('reveal'),150);tip('web','안개가 걷히고 덩굴 칸이 드러났어요! 같은 아이템을 끌어 합치면 풀려요')}
   const now=Date.now();combo=now-lastMerge<2500?combo+1:1;lastMerge=now;gainXp(1);
-  if(combo>=3){const cell=boardEl.children[to];
+  if(combo>=3){sfx('combo',combo);const cell=boardEl.children[to];
     if(cell){const cr=relRect(cell);const d=document.createElement('div');d.className='combo-pop';d.textContent=`콤보 ×${combo}!`;d.style.left=cr.cx+'px';d.style.top=cr.y+'px';app.appendChild(d);setTimeout(()=>d.remove(),1000);
       if(combo%5===0){S.energy+=1;flyTo('⚡',cr,$('pEnergy'),1)}}
     S.coins+=Math.min(5,combo-2)}
@@ -1180,7 +1187,7 @@ function drop(from,to){
   if(to<0||to===from){renderBoard();return}
   const A=S.board[from],B=S.board[to];
   if(B&&B.__reserved){renderBoard();return}
-  if(!B){S.board[to]=A;S.board[from]=null;sel=to;renderBoard();save();return}
+  if(!B){S.board[to]=A;S.board[from]=null;sel=to;renderBoard();save();sfx('drop');return}
   if(B.lock===2){renderBoard();shakeCell(to);toast('안개 칸이에요. 바로 옆에서 합성하면 안개가 걷혀요');return}
   const flash={};
   if(canMerge(A,B)){
@@ -1189,38 +1196,38 @@ function drop(from,to){
     if(B.lock===1){flash[to]='reveal';toast('덩굴이 풀렸어요!')}else flash[to]='pop';
     if(res.k==='g')toast(`${GENS[res.g].name} Lv${res.lv}! 충전량과 고급 재료 확률이 올라요`,2800);
     if(res.k==='c')toast(`${CHEST.name[res.l-1]}(으)로 합쳐졌어요`);
-    afterMerge(to,flash);renderBoard(flash);save();
+    sfx(B.lock===1?'unlock':'merge',res.k==='i'?res.l:4);afterMerge(to,flash);renderBoard(flash);save();
     const r=relRect(boardEl.children[to]);burst(r.cx,r.cy,['✨','⭐'],B.lock===1?14:8);return;
   }
-  if(A.k==='i'&&B.k==='i'&&A.c===B.c&&A.l===B.l){toast('이미 최고 레벨 아이템이에요');renderBoard();return}
+  if(A.k==='i'&&B.k==='i'&&A.c===B.c&&A.l===B.l){toast('이미 최고 레벨 아이템이에요');sfx('bad');renderBoard();return}
   if(A.k==='j'&&B.k==='i'){
     if(B.l>=chainLen(B.c)){toast('최고 레벨 아이템에는 쓸 수 없어요');renderBoard();return}
     S.board[to]=it(B.c,B.l+1);S.board[from]=null;sel=to;discover(B.c,B.l+1);
     flash[to]=B.lock?'reveal':'pop';afterMerge(to,flash);renderBoard(flash);save();
-    const r=relRect(boardEl.children[to]);burst(r.cx,r.cy,['🌈','✨','⭐'],12);toast(`무지개 별로 ${item(B.c,B.l+1)[1]} 완성!`);return;
+    const r=relRect(boardEl.children[to]);sfx('unlock');burst(r.cx,r.cy,['🌈','✨','⭐'],12);toast(`무지개 별로 ${item(B.c,B.l+1)[1]} 완성!`);return;
   }
   const m=recipeOf(A,B);
   if(m&&!B.lock){
     S.board[from]=null;S.board[to]=null;S.inv[m]++;sel=-1;afterMerge(to,flash);renderBoard(flash);
     const r=relRect(boardEl.children[to]);burst(r.cx,r.cy,['💜','✨',MATS[m].e],12);flyTo(MATS[m].e,r,$('invBtn'),1,34);
-    toast(`조합 성공! ${MATS[m].e} ${MATS[m].name} → 창고`);gainXp(3);setTimeout(()=>{renderHud();renderOrders()},750);save();return;
+    sfx('craft');toast(`조합 성공! ${MATS[m].e} ${MATS[m].name} → 창고`);gainXp(3);setTimeout(()=>{renderHud();renderOrders()},750);save();return;
   }
   if(B.lock===1){renderBoard();shakeCell(to);toast('덩굴에 묶인 칸은 같은 아이템으로만 풀 수 있어요');return}
-  S.board[to]=A;S.board[from]=B;sel=to;renderBoard();save();
+  S.board[to]=A;S.board[from]=B;sel=to;renderBoard();save();sfx('drop');
 }
 /* bag */
 function toBag(i){
   const v=S.board[i];if(!v||v.lock)return;
   if(v.k==='g'){toast('생산기는 가방에 넣을 수 없어요');renderBoard();return}
   if(S.bag.length>=BAG_MAX){toast('가방이 가득 찼어요');renderBoard();return}
-  S.bag.push(v);S.board[i]=null;if(sel===i)sel=-1;renderBoard();save();bump($('bagBtn'));toast(`${nameOf(v)}을(를) 가방에 넣었어요`);
+  sfx('bag');S.bag.push(v);S.board[i]=null;if(sel===i)sel=-1;renderBoard();save();bump($('bagBtn'));toast(`${nameOf(v)}을(를) 가방에 넣었어요`);
 }
 function openBag(){
   let h=`<h2 class="title-big">가방</h2><p class="sub">보드가 꽉 찼을 때 아이템을 잠시 보관해요. 누르면 보드로 꺼내요.<br>보드에서 아이템을 가방 버튼으로 끌어다 놓으면 넣을 수 있어요</p><div class="bagg">`;
   for(let k=0;k<BAG_MAX;k++){const v=S.bag[k];h+=v?`<button class="emo" data-act="take:${k}" title="${nameOf(v)}">${emojiOf(v)}</button>`:`<button class="empty" disabled>빈칸</button>`}
   h+=`</div><button class="big-btn ghost" data-act="close">닫기</button>`;
   openSheet(h,false,act=>{
-    if(act.startsWith('take:')){const k=+act.slice(5);const t=nearestEmpty(45);if(t<0){toast('보드에 빈칸이 없어요');return}S.board[t]=S.bag.splice(k,1)[0];save();renderBoard({[t]:'spawn'});openBag();return}
+    if(act.startsWith('take:')){const k=+act.slice(5);const t=nearestEmpty(45);if(t<0){toast('보드에 빈칸이 없어요');return}sfx('pop');S.board[t]=S.bag.splice(k,1)[0];save();renderBoard({[t]:'spawn'});openBag();return}
     closeSheet();
   });
 }
@@ -1240,9 +1247,9 @@ window.addEventListener('pointermove',e=>{
   if(!drag||drag.locked)return;
   const dx=e.clientX-drag.x,dy=e.clientY-drag.y;
   if(!drag.moving&&Math.hypot(dx,dy)>7){
-    drag.moving=true;clearHint();
+    drag.moving=true;clearHint();sfx('pick');
     const src=boardEl.children[drag.i],r=relRect(src),v=S.board[drag.i];
-    const gh=document.createElement('div');gh.className='ghost';
+    const gh=document.createElement('div');gh.className='dragghost';
     gh.style.cssText=`left:0;top:0;width:${r.w*1.15}px;height:${r.h*1.15}px;font-size:${r.w*.7}px`;
     gh.textContent=emojiOf(v);app.appendChild(gh);drag.gh=gh;drag.w=r.w*1.15;src.classList.add('src');
     S.board.forEach((o,k)=>{if(k===drag.i||!o||o.lock===2||o.__reserved)return;
@@ -1352,8 +1359,8 @@ function openInfo(){
   openSheet(`<div class="sh-head"><div class="pic emo">${c.e}</div><div><h2>${c.t}</h2>${c.sub?`<p>${c.sub}</p>`:''}</div></div><div class="ibody">${c.d}</div>${c.acts}<button class="big-btn ghost" data-act="close">닫기</button>`,false,act=>{
     const v=S.board[sel];
     if(act==='close'||!v||v.lock){closeSheet();return}
-    if(act==='sell'&&v.k==='i'){const p=Math.min(64,2**(v.l-1));closeSheet();S.coins+=p;S.board[sel]=null;flyTo('🪙',relRect(boardEl.children[sel]),$('pCoin'),Math.min(5,p));sel=-1;renderBoard();save();return}
-    if(act==='refill'&&v.k==='g'&&S.coins>=10){S.coins-=10;v.ch=GEN_MAX[v.lv-1];v.t=Date.now();renderBoard();save();toast(`${GENS[v.g].name} 충전 완료`);openInfo();return}
+    if(act==='sell'&&v.k==='i'){const p=Math.min(64,2**(v.l-1));closeSheet();sfx('coin');S.coins+=p;S.board[sel]=null;flyTo('🪙',relRect(boardEl.children[sel]),$('pCoin'),Math.min(5,p));sel=-1;renderBoard();save();return}
+    if(act==='refill'&&v.k==='g'&&S.coins>=10){sfx('charge');S.coins-=10;v.ch=GEN_MAX[v.lv-1];v.t=Date.now();renderBoard();save();toast(`${GENS[v.g].name} 충전 완료`);openInfo();return}
     if(act==='bag'){closeSheet();toBag(sel);return}
   });
 }
@@ -1396,7 +1403,7 @@ function completeOrder(idx){
   o.reqs.forEach(q=>{if(q.m){S.inv[q.m]--;return}
     const hits=[];S.board.forEach((v,i)=>{if(v&&v.k==='i'&&!v.lock&&v.c===q.c&&v.l===q.l)hits.push(i)});
     const best=hits.find(i=>i!==sel)??hits[0]??-1;if(best>=0){S.board[best]=null;if(best===sel)sel=-1}});
-  S.energy+=o.energy;S.coins+=o.coins;gainXp(o.xp);if(o.chest)S.pending.push(chest(o.chest));
+  sfx('order');S.energy+=o.energy;S.coins+=o.coins;gainXp(o.xp);if(o.chest)S.pending.push(chest(o.chest));
   flyTo('⚡',from,$('pEnergy'),Math.min(8,o.energy));flyTo('🪙',from,$('pCoin'),4,22);setTimeout(renderHud,750);
   card.classList.add('leaving');S.orders[idx]=genOrder(idx);save();
   setTimeout(()=>{renderBoard();renderGoal()},300);
@@ -1421,13 +1428,119 @@ function placePending(){
 }
 
 /* =================================================================
+   SOUND — background music and effects, synthesized live (no audio files)
+   ================================================================= */
+const mtof=m=>440*Math.pow(2,(m-69)/12);
+const SONGS={
+  village:{bpm:76,tick:false,
+    chords:[[53,57,60,64],[50,53,57,60],[46,50,53,57],[48,52,55,58],[53,57,60,64],[45,48,52,55],[46,50,53,57],[48,52,55,58]],
+    bass:[41,38,46,48,41,45,46,48],
+    mel:[[[0,77,2],[2,81,2],[4,79,1],[5,77,1],[6,76,2]],[[0,74,3],[3,77,1],[4,81,4]],[[0,82,2],[2,81,2],[4,77,2],[6,74,2]],[[0,79,4],[4,72,2],[6,74,2]],
+         [[0,77,2],[2,81,2],[4,84,2],[6,81,2]],[[0,79,2],[2,76,2],[4,72,4]],[[0,74,2],[2,77,2],[4,79,2],[6,81,2]],[[0,79,6]]]},
+  puzzle:{bpm:96,tick:true,
+    chords:[[48,52,55,59],[45,48,52,55],[53,57,60,64],[47,50,55,57],[48,52,55,59],[52,55,59,62],[53,57,60,64],[47,50,53,55]],
+    bass:[48,45,41,43,48,40,41,43],
+    mel:[[[0,76,1],[1,79,1],[2,84,2],[4,83,1],[5,84,1],[6,79,2]],[[0,81,2],[2,76,2],[4,72,2],[6,76,2]],[[0,77,1],[1,81,1],[2,84,2],[4,81,2],[6,77,2]],[[0,79,3],[3,74,1],[4,71,4]],
+         [[0,72,1],[1,76,1],[2,79,1],[3,84,1],[4,83,2],[6,79,2]],[[0,76,2],[2,79,2],[4,83,4]],[[0,81,2],[2,77,2],[4,74,2],[6,77,2]],[[0,79,6]]]},
+};
+const AU={ctx:null,want:'village',cur:null,step:0,loop:0,nextT:0,timer:null};
+function impulse(ctx,sec){const n=Math.floor(ctx.sampleRate*sec),b=ctx.createBuffer(2,n,ctx.sampleRate);for(let c=0;c<2;c++){const d=b.getChannelData(c);for(let i=0;i<n;i++)d[i]=(Math.random()*2-1)*Math.pow(1-i/n,3.2)}return b}
+function auBuild(ctx){
+  AU.ctx=ctx;
+  const comp=ctx.createDynamicsCompressor();comp.threshold.value=-12;comp.knee.value=12;comp.ratio.value=3;comp.connect(ctx.destination);
+  AU.mus=ctx.createGain();AU.mus.gain.value=0;AU.mus.connect(comp);
+  AU.fx=ctx.createGain();AU.fx.gain.value=0;AU.fx.connect(comp);
+  AU.out=ctx.createGain();AU.out.connect(AU.mus);
+  AU.rev=ctx.createConvolver();AU.rev.buffer=impulse(ctx,2.6);const rg=ctx.createGain();rg.gain.value=.35;AU.rev.connect(rg);rg.connect(AU.mus);
+  AU.dly=ctx.createDelay(1);AU.dly.delayTime.value=.47;const fb=ctx.createGain();fb.gain.value=.3;const lp=ctx.createBiquadFilter();lp.type='lowpass';lp.frequency.value=2500;
+  AU.dly.connect(lp);lp.connect(fb);fb.connect(AU.dly);const dg=ctx.createGain();dg.gain.value=.25;lp.connect(dg);dg.connect(AU.mus);
+  const n=Math.floor(ctx.sampleRate*.5),nb=ctx.createBuffer(1,n,ctx.sampleRate),d=nb.getChannelData(0);for(let i=0;i<n;i++)d[i]=Math.random()*2-1;AU.noise=nb;
+}
+function tone(t,freq,dur,gain,o={}){
+  const ctx=AU.ctx,osc=ctx.createOscillator();osc.type=o.type||'sine';osc.frequency.setValueAtTime(freq,t);
+  if(o.glide)osc.frequency.exponentialRampToValueAtTime(o.glide,t+(o.glideT||dur*.6));if(o.detune)osc.detune.value=o.detune;
+  const g=ctx.createGain(),a=o.attack||.005;g.gain.setValueAtTime(.0001,t);g.gain.exponentialRampToValueAtTime(gain,t+a);g.gain.exponentialRampToValueAtTime(.0001,t+Math.max(dur,a+.02));
+  let n=osc;if(o.filter){const f=ctx.createBiquadFilter();f.type='lowpass';f.frequency.value=o.filter;osc.connect(f);n=f}
+  n.connect(g);g.connect(o.dest==='fx'?AU.fx:AU.out);
+  if(o.rev){const s=ctx.createGain();s.gain.value=o.rev;g.connect(s);s.connect(AU.rev)}
+  if(o.dly){const s=ctx.createGain();s.gain.value=o.dly;g.connect(s);s.connect(AU.dly)}
+  osc.start(t);osc.stop(t+Math.max(dur,a+.02)+.05);
+}
+function noise(t,dur,gain,o={}){
+  const ctx=AU.ctx,s=ctx.createBufferSource();s.buffer=AU.noise;const f=ctx.createBiquadFilter();f.type=o.type||'highpass';f.frequency.setValueAtTime(o.freq||5000,t);
+  if(o.sweep)f.frequency.exponentialRampToValueAtTime(o.sweep,t+dur);f.Q.value=o.q||.7;
+  const g=ctx.createGain();g.gain.setValueAtTime(.0001,t);g.gain.exponentialRampToValueAtTime(gain,t+(o.attack||.003));g.gain.exponentialRampToValueAtTime(.0001,t+dur);
+  s.connect(f);f.connect(g);g.connect(o.dest==='fx'?AU.fx:AU.out);s.start(t);s.stop(t+dur+.02);
+}
+function mbox(t,m,len,gain){const f=mtof(m);tone(t,f,Math.max(1.2,len),gain,{rev:.45,dly:.3});tone(t,f*2,.45,gain*.18);tone(t,f*4,.18,gain*.1)}
+function mboxFx(t,m,g){const f=mtof(m);tone(t,f,.9,g,{dest:'fx'});tone(t,f*2,.3,g*.2,{dest:'fx'});tone(t,f*4,.12,g*.1,{dest:'fx'})}
+function auStep(song,step,t){
+  const e=60/song.bpm/2,bar=(step>>3)%8,s=step&7,ch=song.chords[bar];
+  if(s===0){ch.forEach(m=>{tone(t,mtof(m),e*8*1.2,.018,{type:'triangle',attack:.8,filter:900,rev:.7});tone(t,mtof(m+12),e*8,.008,{attack:1,rev:.8,detune:7})});
+    tone(t,mtof(song.bass[bar]),e*3.5,.11,{attack:.02,filter:600})}
+  if(s===4)tone(t,mtof(song.bass[bar]+7),e*3,.07,{attack:.02,filter:600});
+  const ap=[0,2,1,3,2,1,3,2][s];tone(t,mtof(ch[ap]+12),.5,s%2?.016:.026,{type:'triangle',filter:1800,rev:.35});
+  const rest=AU.loop%2===1&&bar>=4;
+  if(!rest)song.mel[bar].forEach(([st,m,len])=>{if(st===s)mbox(t,m,len*e*1.6,.085)});
+  else if(s===0||s===5)mbox(t,ch[(bar+s)%4]+24,1,.04);
+  if(song.tick&&(s===2||s===6))noise(t,.04,.012,{freq:7000});
+  if(!rest&&s===7&&Math.random()<.18)mbox(t,ch[Math.floor(Math.random()*4)]+36,1,.025);
+}
+function auTick(){
+  const ctx=AU.ctx;if(!ctx||ctx.state!=='running')return;
+  if(S.music===false){AU.nextT=ctx.currentTime;return}
+  if(AU.nextT<ctx.currentTime)AU.nextT=ctx.currentTime+.05;
+  while(AU.nextT<ctx.currentTime+.3){
+    if(AU.step%8===0&&AU.want!==AU.cur){AU.cur=AU.want;AU.step=0;AU.loop=0}
+    const song=SONGS[AU.cur];auStep(song,AU.step,AU.nextT);
+    AU.nextT+=60/song.bpm/2;if(++AU.step>=64){AU.step=0;AU.loop++}
+  }
+}
+function auApply(){
+  if(!AU.ctx)return;const t=AU.ctx.currentTime;
+  AU.mus.gain.setTargetAtTime(S.music!==false?(S.vol??.6)*1.5:0,t,.4);
+  AU.fx.gain.setTargetAtTime(S.sfx!==false?(S.sfxVol??.8)*.9:0,t,.05);
+}
+function auUnlock(){
+  if(!S||(S.music===false&&S.sfx===false))return;
+  if(!AU.ctx){const AC=window.AudioContext||window.webkitAudioContext;if(!AC)return;try{if(navigator.audioSession)navigator.audioSession.type='ambient'}catch(e){}auBuild(new AC())}
+  if(AU.ctx.state!=='running')AU.ctx.resume().catch(()=>{});
+  if(!AU.timer)AU.timer=setInterval(auTick,60);
+  auApply();
+}
+['pointerdown','touchend','click','keydown'].forEach(ev=>document.addEventListener(ev,auUnlock,{capture:true,passive:true}));
+document.addEventListener('visibilitychange',()=>{if(!AU.ctx)return;if(document.hidden)AU.ctx.suspend().catch(()=>{});else if(S.music!==false||S.sfx!==false)AU.ctx.resume().catch(()=>{})});
+function sfx(name,a=0){
+  if(!AU.ctx||S.sfx===false||AU.ctx.state!=='running')return;
+  const t=AU.ctx.currentTime+.01,F='fx',P=[72,74,76,79,81,84,86,88,91,93];
+  switch(name){
+    case 'pop':tone(t,520,.12,.3,{glide:880,glideT:.06,dest:F});noise(t,.04,.03,{freq:3000,dest:F});break;
+    case 'pick':tone(t,1100,.06,.16,{type:'triangle',dest:F});break;
+    case 'drop':tone(t,380,.1,.26,{glide:280,dest:F});break;
+    case 'merge':{const b=P[Math.max(0,Math.min(P.length-1,a-1))];mboxFx(t,b,.16);mboxFx(t+.07,b+7,.13);if(a>=4)mboxFx(t+.14,b+12,.1);noise(t,.15,.025,{freq:6000,dest:F});break}
+    case 'unlock':[0,4,7,12,16].forEach((d,i)=>mboxFx(t+i*.05,79+d,.1));noise(t,.4,.03,{freq:8000,dest:F});break;
+    case 'reveal':mboxFx(t+.1,91,.06);noise(t,.45,.22,{type:'bandpass',freq:500,sweep:3000,q:1.2,attack:.08,dest:F});break;
+    case 'craft':[0,4,7,11,14,19].forEach((d,i)=>tone(t+i*.06,mtof(72+d),.5,.07,{type:'triangle',dest:F}));noise(t+.3,.3,.03,{freq:7000,dest:F});break;
+    case 'coin':tone(t,mtof(83),.08,.12,{type:'square',filter:4000,dest:F});tone(t+.07,mtof(88),.35,.1,{type:'square',filter:4000,dest:F});break;
+    case 'order':sfx('coin');[0,4,7,12].forEach((d,i)=>mboxFx(t+.15+i*.09,77+d,.12));break;
+    case 'chest':tone(t,300,.15,.15,{glide:700,dest:F});[0,7,12].forEach((d,i)=>mboxFx(t+.08+i*.05,84+d,.08));break;
+    case 'bad':tone(t,220,.18,.32,{type:'triangle',glide:140,dest:F});break;
+    case 'bag':tone(t,400,.06,.2,{glide:600,dest:F});tone(t+.07,600,.08,.18,{glide:900,dest:F});break;
+    case 'charge':tone(t,300,.4,.22,{type:'triangle',glide:1200,glideT:.35,dest:F});break;
+    case 'combo':mboxFx(t+.12,84+Math.min(12,a*2),.09);break;
+    case 'level':[0,4,7,12,16,19,24].forEach((d,i)=>mboxFx(t+i*.08,72+d,.12));break;
+    case 'build':[0,.18,.36].forEach(d=>{tone(t+d,160,.12,.2,{type:'triangle',glide:90,dest:F});noise(t+d,.06,.05,{freq:1500,dest:F})});break;
+    case 'done':[0,4,7,12].forEach((d,i)=>mboxFx(t+i*.1,72+d,.13));break;
+  }
+}
+/* =================================================================
    SCENES / SHEETS
    ================================================================= */
 function setScene(s){
-  S.scene=s;save();clearHint();
+  S.scene=s;save();clearHint();AU.want=s==='map'?'village':'puzzle';
   $('map').classList.toggle('off',s!=='map');$('merge').classList.toggle('off',s!=='merge');
   $('toMerge').hidden=s!=='map';$('goal').hidden=s!=='map';$('zoombar').hidden=s!=='map';$('toMap').hidden=s!=='merge';
-  $('hintBtn').hidden=s!=='merge';$('dexBtn').hidden=s!=='merge';$('gear').hidden=s==='merge';
+  $('hintBtn').hidden=s!=='merge';
   if(s==='merge'){renderBoard();sizeBoard();requestAnimationFrame(sizeBoard);resetIdle();if(!S.tips.firstHint){S.tips.firstHint=1;save();setTimeout(()=>showHint(true),700)}}
   else{syncWorld();resize3D()}
 }
@@ -1445,7 +1558,7 @@ $('invBtn').onclick=()=>{
   MAT_IDS.forEach(m=>{const M=MATS[m];const ok=M.r.every(([c])=>u.includes(c));
     const rec=M.r.map(([c,l])=>(S.found[c]||0)>=l?`<span class="emo">${item(c,l)[0]}</span> ${item(c,l)[1]}`:`<span class="emo">❔</span> ${CHAINS[c].name} ${l}단계`).join(' + ');
     h+=`<div class="row ${ok?'':'lockd'}"><span class="ie emo">${M.e}</span><div class="nm">${M.name}<span>${ok?rec:'🔒 '+M.r.filter(([c])=>!u.includes(c)).map(([c])=>CHAINS[c].name).join(', ')+' 생산기 필요'}</span></div><span class="cnt">${S.inv[m]||0}</span></div>`});
-  h+=`</div><button class="big-btn ghost" data-act="close">닫기</button>`;openSheet(h,false,()=>closeSheet());
+  h+=`</div><button class="big-btn blue" data-act="dex"><span class="emo">📖</span> 아이템 도감 보기</button><button class="big-btn ghost" data-act="close">닫기</button>`;openSheet(h,false,a=>{if(a==='dex')$('dexBtn').onclick();else closeSheet()});
 };
 $('dexBtn').onclick=()=>{
   const u=unlockedChains();const total=CHAIN_IDS.reduce((s,c)=>s+chainLen(c),0),got=CHAIN_IDS.reduce((s,c)=>s+(S.found[c]||0),0);
@@ -1467,17 +1580,25 @@ function showIntro(){
 }
 $('gear').onclick=()=>{
   const tl={auto:'자동 (기기 시간)',day:'항상 낮',night:'항상 밤'};
-  openSheet(`<h2 class="title-big">설정</h2><p class="sub">레벨 ${S.level} · 랜드마크 ${LANDMARKS.filter(lmDone).length}/${LANDMARKS.length} · 건물 ${Object.keys(S.lots).length}채</p>
+  openSheet(`<div class="set"><h2 class="title-big">설정</h2><p class="sub">레벨 ${S.level} · 랜드마크 ${LANDMARKS.filter(lmDone).length}/${LANDMARKS.length} · 건물 ${Object.keys(S.lots).length}채</p>
+  <div class="sndrow"><button class="tog ${S.music!==false?'on':''}" data-act="music"><span class="emo">🎵</span> 배경음악 ${S.music!==false?'켜짐':'꺼짐'}</button><input type="range" id="volM" min="0" max="100" value="${Math.round((S.vol??.6)*100)}" aria-label="배경음악 크기"></div>
+  <div class="sndrow"><button class="tog ${S.sfx!==false?'on':''}" data-act="sfx"><span class="emo">🔔</span> 효과음 ${S.sfx!==false?'켜짐':'꺼짐'}</button><input type="range" id="volF" min="0" max="100" value="${Math.round((S.sfxVol??.8)*100)}" aria-label="효과음 크기"></div>
+  <p class="mute">아이폰 옆면의 무음 스위치가 켜져 있으면 소리가 나지 않아요</p>
   <button class="big-btn blue" data-act="time"><span class="emo">${isNight()?'🌙':'☀️'}</span> 시간대: ${tl[S.time]}</button>
   <button class="big-btn blue" data-act="help">게임 방법 보기</button>
   <button class="big-btn red" data-act="reset">처음부터 다시 하기</button>
-  <button class="big-btn ghost" data-act="close">닫기</button>`,true,act=>{
+  <button class="big-btn ghost" data-act="close">닫기</button></div>`,true,act=>{
     if(act==='time'){S.time={auto:'day',day:'night',night:'auto'}[S.time];save();applyTime();$('gear').onclick()}
+    else if(act==='music'){S.music=S.music===false;save();auUnlock();auApply();$('gear').onclick()}
+    else if(act==='sfx'){S.sfx=S.sfx===false;save();auUnlock();auApply();sfx('pop');$('gear').onclick()}
     else if(act==='help')showIntro();
     else if(act==='reset')openSheet(`<h2 class="title-big">정말 초기화할까요?</h2><p class="sub">마을과 보드의 모든 진행 상황이 사라져요</p><button class="big-btn red" data-act="yes">초기화</button><button class="big-btn ghost" data-act="close">취소</button>`,true,a=>{
       if(a==='yes'){S=fresh();sel=-1;save();closeSheet();setScene('map');renderHud();if(V){flyCam(ZONES[0].c[0],ZONES[0].c[1]-2,1)}setTimeout(showIntro,300)}else closeSheet()});
     else closeSheet();
   });
+  $('volM').oninput=e=>{S.vol=e.target.value/100;auUnlock();auApply();save()};
+  $('volF').oninput=e=>{S.sfxVol=e.target.value/100;auUnlock();auApply();save()};
+  $('volF').onchange=()=>sfx('merge',3);
 };
 
 /* =================================================================
