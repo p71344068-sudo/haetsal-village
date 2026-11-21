@@ -1,0 +1,17 @@
+{
+  "name": "햇살 마을 만들기",
+  "short_name": "햇살 마을",
+  "description": "합성 퍼즐로 에너지를 모아 3D 섬 마을을 짓는 게임",
+  "lang": "ko",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#3ab0e8",
+  "theme_color": "#3ab0e8",
+  "icons": [
+    { "src": "icons/icon-192.png", "sizes": "192x192", "type": "image/png" },
+    { "src": "icons/icon-512.png", "sizes": "512x512", "type": "image/png" },
+    { "src": "icons/icon-maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ]
+}
